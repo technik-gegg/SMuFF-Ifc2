@@ -1,7 +1,5 @@
 #pragma once
 
-#define WM_NODEBUG          // silences WiFiManager
-
 #include <Arduino.h>
 #include <LittleFS.h>
 

@@ -2,12 +2,13 @@
 #include "webserver.h"
 
 String          debugOut;
-String          fromDuet;
+String          fromDuet, fromSMuFF;
 unsigned long   ser1cnt = 0, ser2cnt = 0, lastSer1cnt = 0, lastSer2cnt = 0;
 unsigned        millisCurrent;
 unsigned        millisLast;
 int             isJson = 0;
 unsigned long   jsonData = 0;
+bool            msgSent = false;
 
 void IRAM_ATTR feederTrigger() {
   int state = digitalRead(FEEDER_IN);
@@ -35,6 +36,7 @@ void setup(){
   pinMode(FEEDER_IN, INPUT);
   pinMode(FEEDER_OUT, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(FEEDER_IN), feederTrigger, CHANGE);
+  millisLast = millis();
 }
 
 void serialEvent() {
@@ -72,7 +74,15 @@ void serialEvent() {
 
 void serial1Event() {
   while (Serial1.available()) {
-    Serial.write(Serial1.read());
+    char in = Serial1.read();
+    if(in == '\n') {
+      __debugS("SMuFF sent: %s", fromSMuFF.c_str());
+      fromSMuFF = "";
+    }
+    else {
+      fromSMuFF += in;
+    }
+    Serial.write(in);
     ser2cnt++;
   }
 }
@@ -82,13 +92,12 @@ void loop() {
 
   loopWebserver();
   
-  if(millis()-millisLast > 10000) {
-    /*
-    if(lastSer1cnt != ser1cnt) {
-      __debugS("Bytes transmitted (Duet to SMuFF): %ld", ser1cnt);
-      lastSer1cnt = ser1cnt;
+  if(millis()-millisLast > 5000) {
+    if(WiFi.isConnected() && !msgSent) {
+      // Send a message to Duet
+      Serial.printf("M118 P0 L2 S\"SMuFF-Ifc2 has connected to network '%s'. IP-Address: %s\"\r\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+      msgSent = true;
     }
-    */
     millisLast = millis();
   }
 }
@@ -103,8 +112,9 @@ void __debugS(const char *fmt, ...)
     va_end(arguments);
     debugOut += _dbg;
     debugOut += "\n";
-    if(debugOut.length() > 32000) {
-      debugOut.remove(0, 2000);
+    if(debugOut.length() > 32000) { // trim off first 2000 characters to avoid overruns
+      debugOut.remove(0,2000);
+      debugOut = "..." + debugOut;
     }
 #endif
 }
