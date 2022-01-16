@@ -21,6 +21,8 @@ As you can see in the picture on top, the wiring is pretty simple and can be ach
 >**Pro tip:**
 >
 >If you don't want/have a perfboard, you have the option of soldering the headers using some extension wires directly to the WEMOS D1 mini pins.
+>
+>![No Perfboard](images/No-Perfboard.jpg)
 This way, you'll still have a detachable solution in a smaller form factor. Print a decent housing for it and you're golden!
 
 As you can see, I've used 5-pin JST headers. I did this because the Duet/RRF needs an editional wire for an endstop, which is used to trigger the 'Busy' state of the SMuFF while it's changing tools ([details can be found here](https://sites.google.com/view/the-smuff/how-to/tutorials/configure-the-duet3d?authuser=0)). I'd suggest, you do the same.
