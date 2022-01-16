@@ -7,7 +7,7 @@ This is the firmware source code for SMuFF-Ifc2, which is used in the [SMuFF pro
 The IFC2 is a cheaper and simpler version of the [SMuFF-Ifc](https://github.com/technik-gegg/SMuFF-Ifc), which is built upon an ESP32 (NodeMCU) device.
 
 In contrast to the SMuFF-Ifc, this project uses an ESP8266 (Wemos D1 mini) as the controller and since it has less capabilities, it's simpler but also cheaper.
-The main purpose of using this interface is to add an amplifier for the serial communication lines (which can cause problems sometimes if connected directly) and also to achieve some filtering of the data sent to the SMuFF.
+The main purpose of using this interface is to add an amplifier for the serial communication lines (which can cause problems sometimes if connected directly) and also to achieve filtering of some of the data sent to the SMuFF.
 
 ---
 
@@ -72,7 +72,7 @@ As you connect the SMuFF-Ifc2 device between SMuFF and Duet/RRF, make sure you h
 
 Connections are meant to be made between the **TFT** header on the SMuFF and the **PanelDue** (Duet) / **TFT** (SKR2, E3-RRF) header, as shown in the picture down below. More on that topic you'll find [in this write up](https://sites.google.com/view/the-smuff/how-to/tutorials/configure-the-duet3d?authuser=0).
 
-![IFC2](images/IFC2.png)
+![IFC2](images/Housing.jpg)
 
 Cables are using a 1:1 connection, except for the first pin (which is RESET on the SMuFF controller, btw.). This one is supposed to connect to the **THB** signal pin on the SMuFF and the **E1STOP** signal input on the Duet (or **E1DET** on SKR2, **PWRDET** on E3-RRF).
 Always use proper connectors, i.e. **JST-XH** for the E3-DIP, SKR2 controller, **Dupont** on the E3 V2.0, E3-RRF and **Molex KK** on the Duet3D controller board series.
