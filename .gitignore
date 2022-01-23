@@ -2,3 +2,5 @@
 .vscode
 .lib
 *.workspace
+*.bak
+

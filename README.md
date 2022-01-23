@@ -4,9 +4,9 @@
 ![IFC2](images/IFC2.png)
 
 This is the firmware source code for SMuFF-Ifc2, which is used in the [SMuFF project](https://github.com/technik-gegg/SMuFF-1.1).
-The IFC2 is a cheaper and simpler version of the [SMuFF-Ifc](https://github.com/technik-gegg/SMuFF-Ifc), which is built upon an ESP32 (NodeMCU) device.
+The IFC2 is a cheaper and simpler version of the [SMuFF-Ifc](https://github.com/technik-gegg/SMuFF-Ifc), which was built upon an ESP32 (NodeMCU) device.
 
-In contrast to the SMuFF-Ifc, this project uses an ESP8266 (Wemos D1 mini) as the controller and since it has less capabilities, it's simpler but also cheaper.
+In contrast to the SMuFF-Ifc, this project uses an ESP8266 (Wemos D1 mini) as the controller and since it has less capabilities, it's simpler to build and also cheaper.
 The main purpose of using this interface is to add an amplifier for the serial communication lines (which can cause problems sometimes if connected directly) and also to achieve filtering of some of the data sent to the SMuFF.
 
 ---
@@ -46,6 +46,8 @@ Use your browser to connect to this new address and you'll be greeted with this 
 
 This interface will enable you to look up the debug output coming from the SMuFF-Ifc2, as well as sending GCode commands to either the SMuFF or the Duet/RRF.
 
+*Please notice:* The input fields "BT:" and "Due:" shown in the picture above, will only show up on the ESP32 version.
+
 >**Please keep in mind:**
 >
 >You'll not be able see any responses coming from the SMuFF in the *Debug Output*. That's because the ESP8266 has only the TX line available on the 2nd serial port.
@@ -70,7 +72,7 @@ For the very first build you also need to execute the *Upload Filesystem Image*,
 
 # Connecting the device
 
-As you connect the SMuFF-Ifc2 device between SMuFF and Duet/RRF, make sure you haven't accidentally crossed/shorted GND and +5V, **otherwise you will kill the WEMOS D1 instantly!**
+As you connect the SMuFF-Ifc2 device between SMuFF and Duet/RRF, make sure you haven't accidentally crossed/shorted GND and +5V, **otherwise you will kill the device instantly!**
 
 Connections are meant to be made between the **TFT** header on the SMuFF and the **PanelDue** (Duet) / **TFT** (SKR2, E3-RRF) header, as shown in the picture down below. More on that topic you'll find [in this write up](https://sites.google.com/view/the-smuff/how-to/tutorials/configure-the-duet3d?authuser=0).
 
@@ -90,5 +92,50 @@ If you need other baudrates, you have to change it in the firmware source code -
 ---
 
 ## Recent changes
+
+**1.1.0** - Added ESP32 support
+
+The ESP32 (which has been the base for SMuFF-Ifc version 1) is the bigger brother of the ESP8266 and comes with more features, such as more serial interfaces and Bluetooth support. This enables you to use the SMuFF-Ifc as an three way splitter sitting between Duet / RRF, SMuFF and PanelDue. In addition, this device supports the SMuFF WebInterface (SMuFF-WI) when connecting via Bluetooth.
+With this release, the SMuFF-Ifc version 1 has become obsolete.
+
+![IFC2](images/IFC2-ESP32.png)
+
+For debugging and future enhancements, the ESP32 version also comes with the option to be equipped with an OLED (I2C) display and an addtional button / LED.
+
+![IFC2](images/IFC2-ESP32-Opt.png)
+
+In order to compile for the ESP32, simply pick the **ESP32_Dev** Build Environment and proceed as stated in the description above.
+
+>**Please beware**:
+>
+>The *serveStatic()* method on the ESP32 isn't working correctly because of [this issue](https://github.com/espressif/arduino-esp32/issues/6172)!
+Thus, the web page doesn't load up correctly in your browser.
+>
+>In order to fix this issue, there's a quick & dirty approach, which  modifies code in the arduino-esp32 platform source. More specificly, the **_isFile = fs.exists(path);** statement needs to be replaced with **_isFile = (strrchr(path, '.') != nullptr);**, i.e.:
+
+```CPP
+class StaticRequestHandler : public RequestHandler {
+public:
+    StaticRequestHandler(FS& fs, const char* path, const char* uri, const char* cache_header)
+    : _fs(fs)
+    , _uri(uri)
+    , _path(path)
+    , _cache_header(cache_header)
+    {
+        // quick & dirty solution for issue #6172
+        //_isFile = fs.exists(path);  <-- comment out this line
+        _isFile = (strrchr(path, '.') != nullptr); // <-- insert this line
+        log_v("StaticRequestHandler: path=%s uri=%s isFile=%d, cache_header=%s\r\n", path, uri, _isFile, cache_header ? cache_header : ""); // issue 5506 - cache_header can be nullptr
+        _baseUriLength = _uri.length();
+    }
+```
+
+>**Also:** This variant utilizes the latest Arduino libraries (2.0.2) and some beta platform code, which is supposed to be released in the near future.
+>
+>Because of this (beta), there's a known issue with the WiFiManager, not being able to connect the device to your WiFi network via its standard user interface. A valid work around is to enter the AP-Name and credentials manually in an *wifisave* request, i.e.:
+>
+>http://192.168.4.1/wifisave?s={SSID}&p={PWD}
+>
+>Replace **{SSID}** with the name of your WiFi network/Access-Point and **{PWD}** with the assoiciated password. After sending this request, the ESP32 is supposed to connect flawlessly.
 
 **1.0.0** - Initial commit
