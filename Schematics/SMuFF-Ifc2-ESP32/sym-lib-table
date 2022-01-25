@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name esp32_devkit_v1_doit)(type Legacy)(uri D:/Data/KiCad/kicad/symbols/esp32_devkit_v1_doit.lib)(options "")(descr ""))
+  (lib (name Espressif)(type Legacy)(uri C:/Data/KiCad/Espressif/libraries/Espressif.lib)(options "")(descr ""))
+)

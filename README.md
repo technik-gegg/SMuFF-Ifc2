@@ -93,6 +93,13 @@ If you need other baudrates, you have to change it in the firmware source code -
 
 ## Recent changes
 
+**1.1.1** - Added Schematic and PCB for ESP32 version
+
+This little adapter PCB for the ESP32 DevKit / NodeMCU makes wiring up all the connectors a breeze.
+
+![IFC2](images/ESP32-PCB.png)
+![IFC2](images/ESP32-PCB-Back.png)
+
 **1.1.0** - Added ESP32 support
 
 The ESP32 (which has been the base for SMuFF-Ifc version 1) is the bigger brother of the ESP8266 and comes with more features, such as more serial interfaces and Bluetooth support. This enables you to use the SMuFF-Ifc as an three way splitter sitting between Duet / RRF, SMuFF and PanelDue. In addition, this device supports the SMuFF WebInterface (SMuFF-WI) when connecting via Bluetooth.

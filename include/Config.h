@@ -8,7 +8,7 @@
 #include <BluetoothSerial.h>
 #endif
 
-#define VERSION         "1.1.0"
+#define VERSION         "1.1.1"
 #if defined(ESP32)
 #define MCUTYPE         "ESP32"
 #else

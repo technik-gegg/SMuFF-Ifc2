@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name esp32_devkit_v1_doit)(type KiCad)(uri D:/Data/KiCad/kicad/footprints/esp32_devkit_v1_doit.pretty)(options "")(descr ESP32-DevKit))
+  (lib (name Symbols)(type KiCad)(uri "D:/Grafiken/Gegg/Reisebüro/3D Modelle/SMuFF-Ifc2/KiCad")(options "")(descr ""))
+)
