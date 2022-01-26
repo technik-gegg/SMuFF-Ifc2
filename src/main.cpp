@@ -41,6 +41,9 @@ BluetoothSerial SerialBT;
 void IRAM_ATTR feederTrigger() {
   feederState = digitalRead(FEEDER_IN);
   digitalWrite(FEEDER_OUT, feederState);
+  #if defined (ESP32)
+  digitalWrite(LED_PIN, feederState);
+  #endif
 }
 
 void sendIPAddress() {

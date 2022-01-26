@@ -8,6 +8,7 @@
 
 # Temporary files
 Gerber.zip
+*BOM.zip
 *.000
 *.bak
 *.bck

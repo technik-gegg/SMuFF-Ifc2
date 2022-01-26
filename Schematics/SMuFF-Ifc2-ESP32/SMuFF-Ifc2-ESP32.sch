@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:SMuFF-Ifc2-ESP32-cache
 EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
@@ -6,7 +7,7 @@ encoding utf-8
 Sheet 1 1
 Title "SMuFF-Ifc2 ESP32 PCB"
 Date "2022-01-24"
-Rev "1"
+Rev "2"
 Comp "Technik Gegg"
 Comment1 ""
 Comment2 ""
@@ -17,30 +18,30 @@ $Comp
 L Connector_Generic:Conn_01x05 J1
 U 1 1 61EE9990
 P 6250 2700
-F 0 "J1" H 6330 2742 50  0000 L CNN
-F 1 "DUET/RRF" H 6330 2651 50  0000 L CNN
+F 0 "J1" H 6200 3000 50  0000 L CNN
+F 1 "DUET/RRF" H 6700 2700 50  0000 L CNN
 F 2 "Connector_JST:JST_XH_S5B-XH-A-1_1x05_P2.50mm_Horizontal" H 6250 2700 50  0001 C CNN
 F 3 "~" H 6250 2700 50  0001 C CNN
 	1    6250 2700
-	1    0    0    -1  
+	1    0    0    1   
 $EndComp
 $Comp
 L Connector_Generic:Conn_01x05 J2
 U 1 1 61EEB8ED
 P 6250 3950
-F 0 "J2" H 6330 3992 50  0000 L CNN
-F 1 "SMuFF" H 6330 3901 50  0000 L CNN
+F 0 "J2" H 6200 4250 50  0000 L CNN
+F 1 "SMuFF" H 6700 3950 50  0000 L CNN
 F 2 "Connector_JST:JST_XH_S5B-XH-A-1_1x05_P2.50mm_Horizontal" H 6250 3950 50  0001 C CNN
 F 3 "~" H 6250 3950 50  0001 C CNN
 	1    6250 3950
-	1    0    0    -1  
+	1    0    0    1   
 $EndComp
 $Comp
 L Connector_Generic:Conn_01x04 J3
 U 1 1 61EEDD69
 P 6250 3300
-F 0 "J3" H 6330 3292 50  0000 L CNN
-F 1 "PanelDue" H 6330 3201 50  0000 L CNN
+F 0 "J3" H 6200 3000 50  0000 L CNN
+F 1 "PanelDue" H 6700 3300 50  0000 L CNN
 F 2 "Connector_JST:JST_XH_S4B-XH-A-1_1x04_P2.50mm_Horizontal" H 6250 3300 50  0001 C CNN
 F 3 "~" H 6250 3300 50  0001 C CNN
 	1    6250 3300
@@ -50,8 +51,8 @@ $Comp
 L Connector_Generic:Conn_01x04 J4
 U 1 1 61EF0D8F
 P 6250 4600
-F 0 "J4" H 6330 4592 50  0000 L CNN
-F 1 "OLED I2C" H 6330 4501 50  0000 L CNN
+F 0 "J4" H 6200 4300 50  0000 L CNN
+F 1 "OLED I2C" H 6700 4550 50  0000 L CNN
 F 2 "Connector_JST:JST_XH_S4B-XH-A-1_1x04_P2.50mm_Horizontal" H 6250 4600 50  0001 C CNN
 F 3 "~" H 6250 4600 50  0001 C CNN
 	1    6250 4600
@@ -61,8 +62,8 @@ $Comp
 L Connector_Generic:Conn_01x03 J5
 U 1 1 61EF4691
 P 6250 5350
-F 0 "J5" H 6330 5392 50  0000 L CNN
-F 1 "Extension" H 6330 5301 50  0000 L CNN
+F 0 "J5" H 6200 5150 50  0000 L CNN
+F 1 "Extension" H 6700 5350 50  0000 L CNN
 F 2 "Connector_JST:JST_XH_S3B-XH-A-1_1x03_P2.50mm_Horizontal" H 6250 5350 50  0001 C CNN
 F 3 "~" H 6250 5350 50  0001 C CNN
 	1    6250 5350
@@ -240,10 +241,6 @@ Wire Wire Line
 Connection ~ 5850 3300
 Wire Wire Line
 	5850 3300 5850 3850
-Wire Wire Line
-	3550 3500 6050 3500
-Wire Wire Line
-	3550 3400 6050 3400
 $Comp
 L Connector_Generic:Conn_02x02_Top_Bottom J6
 U 1 1 61FE662A
@@ -288,4 +285,62 @@ Wire Wire Line
 Connection ~ 5150 2000
 Wire Wire Line
 	5150 2000 4900 2000
+Wire Wire Line
+	6050 3400 4350 3400
+Wire Wire Line
+	4350 3400 4350 3500
+Wire Wire Line
+	4350 3500 3550 3500
+Wire Wire Line
+	3550 3400 4200 3400
+Wire Wire Line
+	4200 3400 4200 3600
+Wire Wire Line
+	4200 3600 5950 3600
+Wire Wire Line
+	5950 3600 5950 3500
+Wire Wire Line
+	5950 3500 6050 3500
+Text Notes 6400 2550 0    50   ~ 0
++5V
+Text Notes 6400 2650 0    50   ~ 0
+GND
+Text Notes 6400 2750 0    50   ~ 0
+TX
+Text Notes 6400 2850 0    50   ~ 0
+RX
+Text Notes 6400 2950 0    50   ~ 0
+E1STOP
+Text Notes 6400 4200 0    50   ~ 0
+THB
+Text Notes 6400 3250 0    50   ~ 0
++5V
+Text Notes 6400 3800 0    50   ~ 0
++5V
+Text Notes 6400 3350 0    50   ~ 0
+GND
+Text Notes 6400 3900 0    50   ~ 0
+GND
+Text Notes 6400 3550 0    50   ~ 0
+TX
+Text Notes 6400 4000 0    50   ~ 0
+TX
+Text Notes 6400 3450 0    50   ~ 0
+RX
+Text Notes 6400 4100 0    50   ~ 0
+RX
+Text Notes 6400 4750 0    50   ~ 0
++5V
+Text Notes 6400 4850 0    50   ~ 0
+GND
+Text Notes 6400 4550 0    50   ~ 0
+SDA
+Text Notes 6400 4650 0    50   ~ 0
+SCL
+Text Notes 6400 5400 0    50   ~ 0
+GND
+Text Notes 6400 5300 0    50   ~ 0
+BTN
+Text Notes 6400 5500 0    50   ~ 0
+LED
 $EndSCHEMATC
