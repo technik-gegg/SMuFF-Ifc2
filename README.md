@@ -100,6 +100,8 @@ This little adapter PCB for the ESP32 DevKit / NodeMCU makes wiring up all the c
 ![IFC2](images/ESP32-PCB.png)
 ![IFC2](images/ESP32-PCB-Back.png)
 
+*Before you connect the PCB to your devices, please make sure you've set a jumper cap on **PWR SEL** to either "+5V From Duet" **or** "+5V From SMuFF". This jumper allows you to select the power source for the ESP32 (and the OLED display, if attached). Keep in mind: It's either the one or the other, not both.*
+
 **1.1.0** - Added ESP32 support
 
 The ESP32 (which has been the base for SMuFF-Ifc version 1) is the bigger brother of the ESP8266 and comes with more features, such as more serial interfaces and Bluetooth support. This enables you to use the SMuFF-Ifc as an three way splitter sitting between Duet / RRF, SMuFF and PanelDue. In addition, this device supports the SMuFF WebInterface (SMuFF-WI) when connecting via Bluetooth.
