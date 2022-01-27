@@ -91,6 +91,38 @@ If you need other baudrates, you have to change it in the firmware source code -
 
 ---
 
+# ESP32 Notes
+
+![IFC2](images/ESP32-PCB-Back.png)
+
+The signal names on the bottom layer of this PCB depict to which pin on the according device to connect to. The PCB has been designed to allow a 1:1 connection between the device and this PCB (except pin 1). In some cases (i.e. Duet3D) you have to swap wires (see pictures down below).
+No need to mention, it's always worth checking out the pin assignment of your controller (SMuFF, RRF, Duet, ...) before you attach any cable.
+In any case, make sure that the power lines, +5V and GND, are going to matching pins on your controller. **Swapping them accidentally will cause harm to your controller boards!**
+
+If you're attaching an OLED display for debugging purposes, please check the pin assignment on the OLED PCB twice. Some displays do have swapped +5V and GND pins on their connector! **Swapping them will most likley destroy your display.**
+
+**Please notice:** *Before you connect this PCB to your devices, please make sure you've set a jumper cap on **PWR SEL** to either "+5V From Duet" **or** "+5V From SMuFF". This jumper allows you to select the power source for the ESP32 (and the OLED display, if attached). Keep in mind: It's either the one or the other, not both!*
+
+## Setting up the wires for the ESP32-PCB
+
+The first pin on the SMuFF header (referred to as THB) needs to be routed to the according header on the SMuFF controller and **not** to pin 1 of the TFT header (that's the *Reset* signal, which is not of much help here). Same applies to the pin 1 of the Duet/RRF header (referred to as E1STP).
+In the pictures down below, please notice the difference between an SKR-RRF and genuine Duet3D boards:
+
+![IFC2](images/ESP32-PCB-Conn-RRF.png)
+
+![IFC2](images/ESP32-PCB-Conn.png)
+
+If you're going to connect a PanelDue (for the Duet3D/RRF) or another serial display (RRF only), please make sure the display is also wired up correctly, i.e.:
+
+![IFC2](images/ESP32-PCB-Conn-Due.png)
+
+![IFC2](images/ESP32-PCB-Conn-BTT.png)
+
+>**Pro Tip:** I'm always using the same coloring scheme as shown above, if any possible.
+Means: Red for +5V (or VCC in general), black for GND (red/black for power is kind of a standard in micro electronics), blue for TX (or *output* pins in general), green for RX (or *input* pins in general) and orange / brown / white / violet / gray for other signals. This way they're easy to distinguish and it's easy to tell which wire is supposed to do what, simply by looking at its color.
+
+---
+
 ## Recent changes
 
 **1.1.1** - Added Schematic and PCB for ESP32 version
@@ -100,7 +132,6 @@ This little adapter PCB for the ESP32 DevKit / NodeMCU makes wiring up all the c
 ![IFC2](images/ESP32-PCB.png)
 ![IFC2](images/ESP32-PCB-Back.png)
 
-*Before you connect the PCB to your devices, please make sure you've set a jumper cap on **PWR SEL** to either "+5V From Duet" **or** "+5V From SMuFF". This jumper allows you to select the power source for the ESP32 (and the OLED display, if attached). Keep in mind: It's either the one or the other, not both.*
 
 **1.1.0** - Added ESP32 support
 
