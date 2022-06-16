@@ -125,13 +125,19 @@ Means: Red for +5V (or VCC in general), black for GND (red/black for power is ki
 
 ## Recent changes
 
+**1.2.0** - Using latest ESP32 framework
+
+In the latest framework for the ESP32 the toolchain used did change and hence, the ESP32 version may not compile or run correctly (webpage doesn't show up for example).
+I moved to the latest framework now, which doesn't show the issue (*serveStatic()* method not working correctly) anymore, as reported in 1.1.0.
+I've also modified the serial port handling, which in the last version had the tendency to drop data when passing them between the serial interfaces and trying to log them on the webpage simultanously.
+This version also got a *WebSocket* integration, which will be used to communicate actively with the webpage in an upcoming release.
+
 **1.1.1** - Added Schematic and PCB for ESP32 version
 
 This little adapter PCB for the ESP32 DevKit / NodeMCU makes wiring up all the connectors a breeze.
 
 ![IFC2](images/ESP32-PCB.png)
 ![IFC2](images/ESP32-PCB-Back.png)
-
 
 **1.1.0** - Added ESP32 support
 

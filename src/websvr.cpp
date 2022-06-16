@@ -32,6 +32,7 @@
 #include <ESP8266HTTPClient.h>
 #include <ESP8266NetBIOS.h>
 #endif
+#include <WebSocketsServer.h>
 
 WiFiManager             wifiMgr((Stream&)debugOut);
 #if defined(ESP32)
@@ -41,8 +42,14 @@ HTTPUpdateServer        httpUpdateServer;
 ESP8266WebServer        webServer(80);
 ESP8266HTTPUpdateServer httpUpdateServer;
 #endif
+WebSocketsServer        webSocketServer = WebSocketsServer(8080);
 char                    deviceName[50];
+int                     wsClientsConnected = 0;
+int                     curClient = -1;
 
+extern unsigned long wiSent;
+
+#define WS_CHUNK_SIZE   256
 
 void sendResponse(int status, const char* mime, String value) {
     webServer.sendHeader("Access-Control-Allow-Origin", "*");
@@ -66,7 +73,8 @@ void handle404() {
         message += "</ul>";
     }
     sendResponse(404, MIME_HTML, message);
-    __debugS("404: '%s' not found", webServer.uri().c_str());
+    if(!webServer.uri().startsWith("/wi/assets"))   // don't print any debug message for WI 404
+        __debugS("404: '%s' not found", webServer.uri().c_str());
 }
 
 void initWebserver() {
@@ -164,7 +172,7 @@ void initWebserver() {
     });
     webServer.on("/locate", HTTP_GET, []() {
         #if defined(ESP32)
-        flashIntLED(10);
+            flashIntLED(10);
         #endif
     });
     webServer.on("/reset", HTTP_GET, []() {
@@ -177,6 +185,12 @@ void initWebserver() {
         if(value == "me") {
             ESP.restart();
         }
+    });
+    webServer.on("/wi", HTTP_GET, []() {
+        #if defined(ESP32)
+            webServer.sendHeader("Location","/wi/index.html");
+            webServer.send(303);
+        #endif
     });
 
     #if defined(USE_FS)
@@ -224,11 +238,108 @@ void initWebserver() {
     __debugS("Webserver running");
 }
 
+void hexDump(const void *mem, uint32_t len, uint8_t cols = 16) {
+    char line[30+cols*7];
+    char dump [7];
+
+	const uint8_t* src = (const uint8_t*) mem;
+	__debugS("[HEXDUMP] Address: 0x%08X len: 0x%X (%d)", (ptrdiff_t)src, len, len);
+	for(uint32_t i = 0; i < len; i++) {
+		if(i % cols == 0) {
+            sprintf(line, "[0x%08X] 0x%08X: ", (ptrdiff_t)src, i);
+		}
+		sprintf(dump, "%02X ", *src);
+        strcat(line, dump);
+		src++;
+	}
+	__debugS(line);
+}
+
+const char* wsCliPrefix = "WS client #";
+
+void wsEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+
+    curClient = (int)num;
+    switch(type) {
+        case WStype_DISCONNECTED:
+            __debugS("%s%u has disconnected!", wsCliPrefix, num);
+            curClient = -1;
+            wsClientsConnected--;
+            if(wsClientsConnected < 0)
+                wsClientsConnected = 0;
+            break;
+        case WStype_CONNECTED:
+            {
+                IPAddress ip = webSocketServer.remoteIP(num);
+                __debugS("%s%u has connected from %d.%d.%d.%d url: %s", wsCliPrefix, num, ip[0], ip[1], ip[2], ip[3], payload);
+                wsClientsConnected++;
+            }
+            break;
+        case WStype_TEXT:
+            __debugS("%s%u sent: %s", wsCliPrefix, num, payload);
+            SerialSmuff.write((char *)payload);
+            wiSent++;
+            break;
+        case WStype_BIN:
+            __debugS("%s%u sent: %u bytes", wsCliPrefix, num, length);
+            hexDump(payload, length);
+            break;
+		case WStype_ERROR:			
+            __debugS("%s%u has caused an error", wsCliPrefix, num);
+            break;
+		case WStype_PING:			
+            __debugS("%s%u has pinged", wsCliPrefix, num);
+            break;
+		case WStype_PONG:			
+            __debugS("%s%u has ponged", wsCliPrefix, num);
+            break;
+		case WStype_FRAGMENT_TEXT_START:
+		case WStype_FRAGMENT_BIN_START:
+		case WStype_FRAGMENT:
+		case WStype_FRAGMENT_FIN:
+            __debugS("%s%u has sent an unsupported WStype (0x%04x / %d)", wsCliPrefix, num, type, type);
+			break;
+    }
+}
+
+void initWebsockets() {
+    webSocketServer.begin();
+    webSocketServer.onEvent(wsEvent);
+    __debugS("WebSocketsServer running");
+}
+
+void sendToWebsocket(String& data) {
+    if(wsClientsConnected == 0)
+        return;
+    if(curClient != -1) {
+        if(data.length() > WS_CHUNK_SIZE) {
+            // split data to send into fragments, each WS_CHUNK_SIZE long
+            uint32_t dataLen = data.length();
+            uint32_t ndx = 0;
+            int fragment = 1;
+            do {
+                uint32_t len = ndx+WS_CHUNK_SIZE > dataLen ? dataLen-ndx : WS_CHUNK_SIZE;
+                webSocketServer.sendTXT((uint8_t)curClient, data.substring(ndx, ndx+len).c_str(), len);
+                // __debugS("Sent to client #%d fragment %d (ndx: %d, len: %d): [%s]", curClient, fragment, ndx, len, data.substring(ndx, ndx+len).c_str());
+                ndx += WS_CHUNK_SIZE;
+                fragment++;
+            } while(ndx < dataLen);
+        }
+        else {
+            webSocketServer.sendTXT((uint8_t)curClient, data);
+        }
+        webSocketServer.sendTXT((uint8_t)curClient, "\n");
+    }
+    else {
+        __debugS("Invalid WS Client ID!");
+    }
+}
 
 void loopWebserver() {
     wifiMgr.process();
     webServer.handleClient();
+    webSocketServer.loop();
     #if !defined(ESP32)
-    MDNS.update();      // ESP32 doesn't have this method
+        MDNS.update();      // ESP32 doesn't have this method
     #endif
 }

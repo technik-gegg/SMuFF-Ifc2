@@ -8,7 +8,7 @@
 #include <BluetoothSerial.h>
 #endif
 
-#define VERSION         "1.1.1"
+#define VERSION         "1.2.0"
 #if defined(ESP32)
 #define MCUTYPE         "ESP32"
 #else
@@ -55,6 +55,8 @@ extern int              feederState, buttonState, btConnections;
 
 
 extern void initWebserver();
+extern void initWebsockets();
+extern void sendToWebsocket(String& data);
 extern void loopWebserver();
 extern void initDisplay();
 extern void resetDisplay();

@@ -17,17 +17,24 @@
  *
  */
 #include "Config.h"
+#include <RingBuf.h>
 
 StringStream    debugOut;
 
-#define WM_DEBUG_PORT   (Stream&)debugOut        // route WiFiManager console messages to String
-#define DEBUG_ESP_PORT  (Stream&)debugOut        // route ESP console messages to String
+#define WM_DEBUG_PORT   (Stream&)debugOut         // route WiFiManager console messages to String
+#define DEBUG_ESP_PORT  (Stream&)debugOut         // route ESP console messages to String
 
 String          fromDuet, fromSMuFF, fromPanelDue, fromWI;
+RingBuf<byte, 3072> bufFromDuet;
+RingBuf<byte, 2048> bufFromSMuFF;
+#if defined(ESP32)
+RingBuf<byte, 1024> bufFromPanelDue;
+RingBuf<byte, 512>  bufFromWI;
+#endif
 unsigned        millisCurrent;
 unsigned        millisLast;
 int             isJson = 0;
-unsigned long   jsonData = 0, duetSent = 0, smuffSent = 0, dueSent = 0, btSent = 0;
+unsigned long   jsonData = 0, duetSent = 0, smuffSent = 0, dueSent = 0, btSent = 0, wiSent = 0;
 bool            msgSent = false;
 bool            smuffMode = false;
 int             feederState = 0, buttonState = 0, btConnections = 0;
@@ -52,7 +59,7 @@ void sendIPAddress() {
     SerialDuet.printf("M118 P0 L2 S\"SMuFF-Ifc2 has connected to network '%s'. IP-Address: %s\"\r\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
   }
   else {
-    SerialDuet.printf("M118 P0 L2 S\"SMuFF-Ifc2 in AP-Mode. IP-Address: %s\"\r\n", WiFi.softAPIP().toString().c_str());
+    SerialDuet.printf("M118 P0 L2 S\"SMuFF-Ifc2 running in AP-Mode. IP-Address: %s\"\r\n", WiFi.softAPIP().toString().c_str());
   }
 }
 
@@ -89,10 +96,10 @@ void flashIntLED(int repeat, int _delay) {
 
 void setup(){
   #if defined(ESP32)
-  esp_log_set_vprintf(__debugESP);
-
-  initDisplay();
-  __debugS("Display initialized...");
+    esp_log_set_vprintf(__debugESP);
+    initDisplay();
+    __debugS("Display initialized...");
+    drawScreen();
   #endif
   __debugS("SMuFF-Ifc2 Version %s (%s)\n", VERSION, MCUTYPE);
   __debugS("Starting...");
@@ -100,55 +107,60 @@ void setup(){
 
   // initialize serial ports
   #if !defined(ESP32)
-  SerialDuet.begin(BAUDRATE);       // RXD0, TXD0
-  SerialSmuff.begin(BAUDRATE);      // TXD1 only
-  __debugS("Serial 1 & 2 initialized at %ld Baud", BAUDRATE);
+    SerialDuet.begin(BAUDRATE);       // RXD0, TXD0
+    SerialSmuff.begin(BAUDRATE);      // TXD1 only
+    __debugS("Serial 1 & 2 initialized at %ld Baud", BAUDRATE);
   #else
-  SerialDuet.begin (BAUDRATE, SERIAL_8N1, RXD0_PIN, TXD0_PIN);
-  SerialSmuff.begin(BAUDRATE, SERIAL_8N1, RXD1_PIN, TXD1_PIN);
-  SerialDue.begin  (BAUDRATE, SERIAL_8N1, RXD2_PIN, TXD2_PIN);
-  __debugS("Serial 1, 2 & 3 initialized at %ld Baud", BAUDRATE);
+    SerialDuet.begin (BAUDRATE, SERIAL_8N1, RXD0_PIN, TXD0_PIN);
+    SerialSmuff.begin(BAUDRATE, SERIAL_8N1, RXD1_PIN, TXD1_PIN);
+    SerialDue.begin  (BAUDRATE, SERIAL_8N1, RXD2_PIN, TXD2_PIN);
+    __debugS("Serial 1, 2 & 3 initialized at %ld Baud", BAUDRATE);
   #endif
 
   #if defined(USE_FS)
-  __debugS("Filesystem init...");
-  if(LittleFS.begin()) {
-    __debugS("ok");
-  }
-  else {
-    __debugS("failed");
-  }  
+    __debugS("Filesystem init...");
+    if(LittleFS.begin()) {
+      __debugS("ok");
+    }
+    else {
+      __debugS("failed");
+    }  
   #endif
   __debugS("Webserver init...");
   initWebserver();
+  initWebsockets();
+  drawScreen();
   
   #if defined(ESP32)
-  // setup Bluetooth serial for SMuFF WebInterface connection (ESP32 only)
-  SerialBT.begin(deviceName);
-  SerialBT.register_callback(btStatus); 
-  __debugS("Bluetooth Serial initialized");
+    // setup Bluetooth serial for SMuFF WebInterface connection (ESP32 only)
+    SerialBT.begin(deviceName);
+    SerialBT.register_callback(btStatus); 
+    __debugS("Bluetooth Serial initialized");
 
-  pinMode(BTN_PIN, INPUT_PULLUP);
-  pinMode(LED_PIN, OUTPUT);
-  pinMode(INTLED_PIN, OUTPUT);
-  attachInterrupt(digitalPinToInterrupt(BTN_PIN), buttonTrigger, CHANGE);
-  __debugS("External I/O initialized");
+    pinMode(BTN_PIN, INPUT_PULLUP);
+    pinMode(LED_PIN, OUTPUT);
+    pinMode(INTLED_PIN, OUTPUT);
+    attachInterrupt(digitalPinToInterrupt(BTN_PIN), buttonTrigger, CHANGE);
+    __debugS("External I/O initialized");
   #endif
 
   pinMode(FEEDER_IN, INPUT);
   pinMode(FEEDER_OUT, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(FEEDER_IN), feederTrigger, CHANGE);
   __debugS("Feeder I/O initialized");
+  drawScreen();
   
   millisLast = millis();
   #if defined(ESP32)
-  flashIntLED(5);
+    flashIntLED(5);
   #endif
 }
 
 void serialDuetEvent() {
   while (SerialDuet.available()) {
     int in = SerialDuet.read();
+    if(in == -1)
+      break;
     if(in == '\\') {                  // is it a escape sequence?
       while(!SerialDuet.available())  
         ;                             // wait for next character
@@ -184,28 +196,21 @@ void serialDuetEvent() {
         SerialDue.write(in);
       }
       #else
-      // filter any JSON sequences coming from Duet since SMuFF won't handle it
-      if(in == '{') {
-        isJson++;
-      }
-      if(in == '}') {
-        isJson--;
-        fromDuet += in;
-        continue;
-      }
-      if(isJson <= 0) {
-        if(in != 0)
-          SerialSmuff.write(in);
-      }
+        // filter any JSON sequences coming from Duet since SMuFF won't handle it
+        if(in == '{') {
+          isJson++;
+        }
+        if(in == '}') {
+          isJson--;
+          fromDuet += in;
+          continue;
+        }
+        if(isJson <= 0) {
+          if(in != 0)
+            SerialSmuff.write(in);
+        }
       #endif
-      if(in == '\n') {
-        __debugS("Duet sent: %s", fromDuet.c_str());
-        fromDuet = "";
-        smuffMode = false;
-      }
-      else {
-        fromDuet += (char)in;
-      }
+      bufFromDuet.lockedPush(in);
     }
   }
 }
@@ -213,17 +218,13 @@ void serialDuetEvent() {
 void serialSmuffEvent() {
   while (SerialSmuff.available()) {
     int in = SerialSmuff.read();
+    if(in == -1)
+      break;
     #if defined(ESP32)
-    if(btConnections > 0)
-      SerialBT.write(in);
+      if(btConnections > 0)
+        SerialBT.write(in);
     #endif
-    if(in == '\n') {
-      __debugS("SMuFF sent: %s", fromSMuFF.c_str());
-      fromSMuFF = "";
-    }
-    else {
-      fromSMuFF += (char)in;
-    }
+    bufFromSMuFF.lockedPush(in);
   }
 }
 
@@ -231,28 +232,20 @@ void serialSmuffEvent() {
 void SerialDueEvent() {
   while (SerialDue.available()) {
     int in = SerialDue.read();
+    if(in == -1)
+      break;
     SerialDuet.write(in);
-    if(in == '\n') {
-      __debugS("PanelDue sent: %s", fromPanelDue.c_str());
-      fromPanelDue = "";
-    }
-    else {
-      fromPanelDue += (char)in;
-    }
+    bufFromPanelDue.lockedPush(in);
   }
 }
 
 void serialBTEvent() {
   while (SerialBT.available()) {
     int in = SerialBT.read();
+    if(in == -1)
+      break;
     SerialSmuff.write(in);
-    if(in == '\n') {
-      __debugS("SMuFF-WI sent: %s", fromWI.c_str());
-      fromWI = "";
-    }
-    else {
-      fromWI += (char)in;
-    }
+    bufFromWI.lockedPush(in);
   }
 }
 
@@ -274,16 +267,58 @@ void goToHall() {
 }
 #endif
 
+template<class T>
+void dumpBuffer(const T& buffer, String& ref, const char* dbg, unsigned long* cntRef, bool sendWS = false) {
+    if(buffer->isEmpty())
+      return;
+    bool stat = true;
+    bool lineComplete = false;
+    do {
+      byte b;
+      if((stat = (bool)buffer->lockedPop(b))) {
+        if(b=='\n') {
+          lineComplete = true;
+          break;
+        }
+        ref += (char)b;
+      }
+    } while (stat);
+    if(lineComplete) {
+      if(sendWS)
+        sendToWebsocket(ref);
+      if(dbg != nullptr)
+        __debugS("%s sent: %s", dbg, ref.c_str());
+      ref = "";
+      *cntRef += 1;
+    }
+}
+
 void loop() { 
+
+  if(SerialDuet.available()) {
+    serialDuetEvent();
+  }
+  if(SerialSmuff.available()) {
+    serialSmuffEvent();
+  }
+  #if defined(ESP32)
+    if(SerialDue.available()) {
+      SerialDueEvent();
+    }
+    if(SerialBT.available()) {
+      serialBTEvent();
+    }
+  #endif
+
+  dumpBuffer(&bufFromSMuFF, fromSMuFF, "SMuFF", &smuffSent, true);
+  dumpBuffer(&bufFromDuet, fromDuet, "Duet", &duetSent, false);
+  #if defined(ESP32)
+    dumpBuffer(&bufFromPanelDue, fromPanelDue, "PanelDue", &dueSent, false);
+    dumpBuffer(&bufFromWI, fromWI, "SMuFF-WI", &btSent, false);
+  #endif
 
   loopWebserver();
   
-  if(millis() % 500 == 0) {
-    #if defined(ESP32)
-    goToHall();
-    #endif
-  }
-
   if(millis()-millisLast > 5000) {
     // send message with IP address to Duet Log
     if(!msgSent) {
@@ -292,25 +327,14 @@ void loop() {
     }
     millisLast = millis();
   }
-  
-  if(SerialDuet.available()) {
-    serialDuetEvent();
-    duetSent++;
+
+  if(millis() % 500 == 0) {
+    #if defined(ESP32)
+      goToHall();
+      drawScreen();
+    #endif
   }
-  if(SerialSmuff.available()) {
-    serialSmuffEvent();
-    smuffSent++;
-  }
-  #if defined(ESP32)
-  if(SerialDue.available()) {
-    SerialDueEvent();
-    dueSent++;
-  }
-  if(SerialBT.available()) {
-    serialBTEvent();
-    btSent++;
-  }
-  #endif
+
 }
 
 int __debugESP(const char* fmt, va_list arguments) {
@@ -328,10 +352,9 @@ void __debugS(const char* fmt, ...)
     va_start(arguments, fmt);
     vsnprintf_P(_dbg, ArraySize(_dbg) - 1, fmt, arguments);
     va_end(arguments);
-    //SerialDuet.println(_dbg);
     debugOut.println(_dbg);
     debugOut.flush();
-    #if defined(ESP32)
-    drawScreen();
-    #endif
+    // #if defined(ESP32)
+    //   drawScreen();
+    // #endif
 }

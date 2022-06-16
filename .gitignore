@@ -5,6 +5,9 @@
 .lib
 *.workspace
 *.bak
+data/wi/*
+zipDataFolder.py
+
 
 # Temporary files
 Gerber.zip

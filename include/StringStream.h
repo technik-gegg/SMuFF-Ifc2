@@ -58,7 +58,7 @@ public:
         return strlen(str);
     };
     virtual size_t write(const void *buf, uint32_t len) {
-        char tmp[len];
+        char tmp[len+1];
         memcpy(tmp, buf, len);
         tmp[len] = 0;
         buffer += String(tmp);
